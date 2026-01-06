@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile Settings | BlueStudy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --bg-main: #0f172a;
+        --card-bg: #1e293b;
+        --border-color: #334155;
+        --accent-blue: #2563eb;
+        --accent-hover: #1d4ed8;
+      }
+      body {
+        background-color: var(--bg-main);
+        color: #f8fafc;
+        font-family: sans-serif;
+      }
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+      }
+      .input-field {
+        background-color: #0f172a;
+        border: 1px solid var(--border-color);
+        color: white;
+        transition: all 0.2s;
+      }
+      .input-field:focus {
+        border-color: var(--accent-blue);
+        outline: none;
+      }
+      .btn-blue {
+        background-color: var(--accent-blue);
+        color: white;
+        transition: 0.3s;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <header class="p-6 max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div
+          class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+        >
+          <i class="fas fa-graduation-cap text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold">
+          BlueStudy <span class="text-blue-500 text-sm">PRO</span>
+        </h1>
+      </div>
+      <a
+        href="{{ url_for('index') }}"
+        class="text-slate-400 hover:text-white transition flex items-center gap-2"
+      >
+        <i class="fas fa-arrow-left"></i><span>Back to Tasks</span>
+      </a>
+    </header>
+
+    <main
+      class="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-4 gap-8"
+    >
+      <aside class="md:col-span-1">
+        <div class="card p-4">
+          <div class="flex items-center gap-4 mb-6 p-2">
+            <div
+              class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-xl font-bold text-blue-400 border border-slate-600"
+            >
+              {{ username[0]|upper }}
+            </div>
+            <div>
+              <p class="font-bold leading-tight">{{ username }}</p>
+              <p class="text-xs text-slate-500">Student Plan</p>
+            </div>
+          </div>
+          <nav class="space-y-1">
+            <a
+              href="{{ url_for('logout') }}"
+              class="flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-400/10"
+            >
+              <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
+          </nav>
+        </div>
+      </aside>
+
+      <div class="md:col-span-3 space-y-6">
+        {% with messages = get_flashed_messages() %} {% if messages %} {% for
+        message in messages %}
+        <div
+          class="bg-blue-600/20 border border-blue-500 text-blue-100 p-4 rounded-xl mb-4"
+        >
+          {{ message }}
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <section class="card p-6 md:p-8">
+          <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+            <i class="fas fa-id-card text-blue-500"></i> Account Identity
+          </h2>
+          <form
+            action="{{ url_for('profile') }}"
+            method="POST"
+            class="space-y-4 max-w-md"
+          >
+            <input type="hidden" name="action" value="update_username" />
+            <div>
+              <label class="block text-sm font-medium text-slate-400 mb-2"
+                >Display Username</label
+              >
+              <input
+                type="text"
+                name="username"
+                class="input-field w-full p-3 rounded-xl"
+                value="{{ username }}"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="btn-blue px-6 py-2.5 rounded-xl font-semibold"
+            >
+              Update Username
+            </button>
+          </form>
+        </section>
+
+        <section class="card p-6 md:p-8">
+          <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+            <i class="fas fa-key text-orange-500"></i> Security
+          </h2>
+
+          <form
+            id="passwordForm"
+            action="{{ url_for('profile') }}"
+            method="POST"
+            class="space-y-4 max-w-md"
+          >
+            <input type="hidden" name="action" value="update_password" />
+
+            <div
+              id="passwordError"
+              class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm"
+            >
+              <i class="fas fa-exclamation-circle mr-2"></i>
+              <span id="errorText"></span>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-400 mb-2"
+                >Current Password</label
+              >
+              <input
+                type="password"
+                id="currentPassword"
+                name="current_password"
+                class="input-field w-full p-3 rounded-xl"
+                required
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-400 mb-2"
+                >New Password</label
+              >
+              <input
+                type="password"
+                id="newPassword"
+                name="new_password"
+                class="input-field w-full p-3 rounded-xl"
+                required
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-400 mb-2"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                id="confirmPassword"
+                class="input-field w-full p-3 rounded-xl"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl font-semibold transition"
+            >
+              Change Password
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      // Simple client-side check to make sure passwords match before sending to Python
+      const passwordForm = document.getElementById("passwordForm");
+      const passwordError = document.getElementById("passwordError");
+      const errorText = document.getElementById("errorText");
+
+      passwordForm.addEventListener("submit", (e) => {
+        const newPass = document.getElementById("newPassword").value;
+        const confirmPass = document.getElementById("confirmPassword").value;
+
+        // 1. Hide error box initially on every submit attempt
+        passwordError.classList.add("hidden");
+
+        // 2. Client-side Validation
+        if (newPass !== confirmPass) {
+          e.preventDefault(); // Stop the form from sending to Python
+          errorText.innerText = "New passwords do not match!";
+          passwordError.classList.remove("hidden");
+          return;
+        }
+
+        if (newPass.length < 8) {
+          e.preventDefault();
+          errorText.innerText = "New password must be at least 8 characters.";
+          passwordError.classList.remove("hidden");
+          return;
+        }
+
+        // If it reaches here, the form submits to app.py
+        // app.py will then check if 'current_password' is correct in the DB.
+      });
+    </script>
+  </body>
+</html>

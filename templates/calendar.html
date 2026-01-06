@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendar - BlueStudy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/calendar.css') }}"
+    />
+  </head>
+  <body class="p-4 md:p-8 min-h-screen relative">
+    <!-- AI Toggle Button -->
+
+    <!-- AI Modal -->
+
+    <div class="max-w-6xl mx-auto">
+      <nav
+        class="sticky top-0 z-40 backdrop-blur bg-slate-900/80 border-b border-slate-800 mb-8 rounded-xl px-4"
+      >
+        <div class="flex items-center justify-between h-20">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg"
+            >
+              <i class="fas fa-graduation-cap text-white text-xl"></i>
+            </div>
+            <a href="/" class="font-bold text-2xl text-white tracking-wide">
+              BlueStudy
+              <!-- <span class="ms-1 text-blue-500 text-sm font-medium">PRO</span> -->
+            </a>
+          </div>
+
+          <div class="hidden md:flex items-center gap-10 text-base">
+            <a
+              href="{{ url_for('index') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'index' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-list-check"></i> Tasks
+            </a>
+            <a
+              href="{{ url_for('calendar') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'calendar' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-calendar"></i> Calendar
+            </a>
+            <a
+              href="{{ url_for('flashcards') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'flashcards' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-bolt"></i> Flashcards
+            </a>
+            <a
+              href="{{ url_for('library') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'library' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-book"></i> Library
+            </a>
+            <a
+              href="{{ url_for('timer') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'timer' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-clock"></i> Timer
+            </a>
+            <!-- <a
+              href="{{ url_for('subscribe') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'subscribe' else 'text-amber-400 hover:text-amber-300' }}"
+            >
+              <i class="fas fa-crown"></i> Upgrade to Pro
+            </a> -->
+          </div>
+
+          <div class="relative inline-block text-left" id="settingsDropdown">
+            <button
+              onclick="toggleSettings()"
+              class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition shadow-lg"
+            >
+              <i
+                class="fas fa-cog transition-transform duration-300"
+                id="settingsIcon"
+              ></i>
+            </button>
+
+            <div
+              id="dropdownMenu"
+              class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 border border-slate-700 shadow-2xl opacity-0 scale-95 pointer-events-none transition-all duration-200 z-50 overflow-hidden"
+            >
+              <div class="md:hidden border-t border-slate-700">
+                <a
+                  href="{{ url_for('index') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'index'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-list-check"></i> Tasks
+                </a>
+
+                <a
+                  href="{{ url_for('calendar') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'calendar'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-calendar"></i> Calendar
+                </a>
+
+                <a
+                  href="{{ url_for('flashcards') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'flashcards'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-bolt"></i> Flashcards
+                </a>
+
+                <a
+                  href="{{ url_for('library') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'library'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-book"></i> Library
+                </a>
+
+                <a
+                  href="{{ url_for('timer') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'timer'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-clock"></i> Timer
+                </a>
+              </div>
+              <div class="flex flex-col">
+                <div
+                  class="px-4 py-3 border-b border-slate-700 bg-slate-900/50"
+                >
+                  <p class="text-xs text-slate-500 uppercase font-bold">
+                    Logged in as
+                  </p>
+                  <p class="text-sm font-medium text-white truncate">
+                    {{ current_user.id }}
+                  </p>
+                </div>
+
+                <a
+                  href="{{ url_for('profile') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-blue-600 hover:text-white transition"
+                >
+                  <i class="fas fa-user-circle mr-2"></i> Profile
+                </a>
+                <div class="border-t border-slate-700 mt-1 pt-1">
+                  <a
+                    href="/logout"
+                    class="flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-600/20 hover:text-red-300 transition"
+                  >
+                    <i class="fas fa-sign-out-alt w-4"></i>
+                    <span>Log Out</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <!-- Calendar Controls -->
+      <div
+        class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4"
+      >
+        <div>
+          <h1 class="text-3xl font-bold text-white" id="currentMonthYear">
+            December 2023
+          </h1>
+          <p class="text-slate-400 text-sm mt-1">
+            Plan your study schedule and deadlines
+          </p>
+        </div>
+        <div
+          class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700"
+        >
+          <button
+            class="px-4 py-2 hover:bg-slate-700 rounded-lg transition"
+            onclick="changeMonth(-1)"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-lg"
+            onclick="goToToday()"
+          >
+            Today
+          </button>
+          <button
+            class="px-4 py-2 hover:bg-slate-700 rounded-lg transition"
+            onclick="changeMonth(1)"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div class="card calendar-container rounded-2xl">
+        <div class="grid grid-cols-7">
+          <div class="day-header">SUN</div>
+          <div class="day-header">MON</div>
+          <div class="day-header">TUE</div>
+          <div class="day-header">WED</div>
+          <div class="day-header">THU</div>
+          <div class="day-header">FRI</div>
+          <div class="day-header">SAT</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+          <!-- JS generates days here -->
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="card p-6 rounded-2xl border-l-4 border-blue-500">
+          <h4
+            class="text-slae-400 text-xs font-bold uppercase tracking-wider mb-2"
+          >
+            Upcoming Tasks
+          </h4>
+          <div class="space-y-3">
+            {% set upcoming = [] %} {% for task in tasks %} {% if task.due_date
+            >= today and task.status != 'Completed' %} {% set _ =
+            upcoming.append(task) %} {% endif %} {% endfor %} {% if upcoming %}
+            {# Sort by date and take the first 3 #} {% for task in
+            upcoming|sort(attribute='date') %} {% if loop.index <= 3 %}
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium truncate mr-2"
+                >{{ task.subject }}</span
+              >
+              <span
+                class="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 rounded whitespace-nowrap"
+                >{{ task.due_date[5:] }}</span
+              >
+            </div>
+            {% endif %} {% endfor %} {% else %}
+            <p class="text-xs text-slate-500">No upcoming tasks</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      const TASKS = {{ tasks | tojson | safe }};
+      console.log("TASKS from template:", TASKS);
+    </script>
+    <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+  </body>
+</html>

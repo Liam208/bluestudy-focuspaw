@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlueStudy Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+
+  <body
+    class="p-4 md:p-8 pb-32 bg-light-bg text-slate-900 dark:bg-dark-bg dark:text-[#f8fafc] relative min-h-screen"
+  >
+    <button
+      onclick="toggleAI(event)"
+      class="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:scale-110 transition-transform z-40 border-4 border-white dark:border-dark-card"
+    >
+      <i class="fas fa-robot"></i>
+    </button>
+
+    <div id="aiModal" class="fixed inset-0 z-50">
+      <div class="ai-panel" onclick="event.stopPropagation()">
+        <div
+          class="bg-light-card dark:bg-dark-card w-full h-full rounded-l-3xl shadow-2xl flex flex-col overflow-hidden border-l border-light-border dark:border-dark-border"
+        >
+          <div
+            class="ai-header relative p-6 border-b border-light-border dark:border-dark-border flex justify-between items-center bg-blue-600 text-white"
+          >
+            <div class="flex items-center gap-3">
+              <i class="fas fa-brain text-2xl"></i>
+              <div>
+                <h3 class="font-bold text-lg leading-none">BlueStudy AI</h3>
+                <span class="text-xs text-blue-200"
+                  >Personal Study Assistant</span
+                >
+              </div>
+            </div>
+            <!-- close button -->
+            <button
+              onclick="toggleAI(event)"
+              class="close-btn hover:rotate-90 transition-transform"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          <div
+            class="p-6 overflow-y-auto flex-1 text-slate-700 dark:text-slate-300 space-y-4"
+            id="aiResponseArea"
+          >
+            <div
+              class="bg-blue-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30"
+            >
+              <p class="text-sm italic">
+                "Hello! Ask me to summarize your tasks, create a study schedule,
+                or explain a difficult topic. I'm ready to help!"
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="p-4 bg-slate-50 dark:bg-dark-bg/50 border-t border-light-border dark:border-dark-border"
+          >
+            <div class="relative">
+              <textarea
+                id="aiInput"
+                placeholder="Ask anything..."
+                class="w-full py-3 pl-4 pr-12 rounded-xl border border-light-border dark:border-dark-border bg-white dark:bg-dark-card text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none overflow-hidden"
+                rows="1"
+              ></textarea>
+              <button
+                id="aiSendBtn"
+                class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center"
+              >
+                <i class="fas fa-paper-plane text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4">
+      <nav
+        class="sticky top-0 z-40 backdrop-blur bg-slate-900/80 border-b border-slate-800 mb-8 rounded-xl px-4"
+      >
+        <div class="flex items-center justify-between h-20">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg"
+            >
+              <i class="fas fa-graduation-cap text-white text-xl"></i>
+            </div>
+            <a href="/" class="font-bold text-2xl text-white tracking-wide">
+              BlueStudy
+              <!-- <span class="ms-1 text-blue-500 text-sm font-medium">PRO</span> -->
+            </a>
+          </div>
+
+          <div class="hidden md:flex items-center gap-10 text-base">
+            <a
+              href="{{ url_for('index') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'index' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-list-check"></i> Tasks
+            </a>
+            <a
+              href="{{ url_for('calendar') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'calendar' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-calendar"></i> Calendar
+            </a>
+            <a
+              href="{{ url_for('flashcards') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'flashcards' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-bolt"></i> Flashcards
+            </a>
+            <a
+              href="{{ url_for('library') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'library' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-book"></i> Library
+            </a>
+            <a
+              href="{{ url_for('timer') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'timer' else 'text-slate-400 hover:text-white' }}"
+            >
+              <i class="fas fa-clock"></i> Timer
+            </a>
+            <!-- <a
+              href="{{ url_for('subscribe') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'subscribe' else 'text-amber-400 hover:text-amber-300' }}"
+            >
+              <i class="fas fa-crown"></i> Upgrade to Pro
+            </a> -->
+          </div>
+
+          <div class="relative inline-block text-left" id="settingsDropdown">
+            <button
+              onclick="toggleSettings()"
+              class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition shadow-lg"
+            >
+              <i
+                class="fas fa-cog transition-transform duration-300"
+                id="settingsIcon"
+              ></i>
+            </button>
+
+            <div
+              id="dropdownMenu"
+              class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 border border-slate-700 shadow-2xl opacity-0 scale-95 pointer-events-none transition-all duration-200 z-50 overflow-hidden"
+            >
+              <div class="md:hidden border-t border-slate-700">
+                <a
+                  href="{{ url_for('index') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'index'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-list-check"></i> Tasks
+                </a>
+
+                <a
+                  href="{{ url_for('calendar') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'calendar'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-calendar"></i> Calendar
+                </a>
+
+                <a
+                  href="{{ url_for('flashcards') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'flashcards'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-bolt"></i> Flashcards
+                </a>
+
+                <a
+                  href="{{ url_for('library') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'library'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-book"></i> Library
+                </a>
+
+                <a
+                  href="{{ url_for('timer') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'timer'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+                >
+                  <i class="fas fa-clock"></i> Timer
+                </a>
+              </div>
+              <div class="flex flex-col">
+                <div
+                  class="px-4 py-3 border-b border-slate-700 bg-slate-900/50"
+                >
+                  <p class="text-xs text-slate-500 uppercase font-bold">
+                    Logged in as
+                  </p>
+                  <p class="text-sm font-medium text-white truncate">
+                    {{ current_user.id }}
+                  </p>
+                </div>
+
+                <a
+                  href="{{ url_for('profile') }}"
+                  class="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-blue-600 hover:text-white transition"
+                >
+                  <i class="fas fa-user-circle mr-2"></i> Profile
+                </a>
+                <div class="border-t border-slate-700 mt-1 pt-1">
+                  <a
+                    href="/logout"
+                    class="flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-600/20 hover:text-red-300 transition"
+                  >
+                    <i class="fas fa-sign-out-alt w-4"></i>
+                    <span>Log Out</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {% if overdue_count > 0 %}
+      <div
+        class="w-full flex flex-col gap-3 rounded-2xl p-5 bg-red-500/10 border border-red-500/20 mb-8"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-red-500/20"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-triangle-alert text-red-500"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
+              />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-red-500 font-bold text-lg leading-tight">
+              Overdue Tasks
+            </h3>
+            <p class="text-red-400/80 text-sm">
+              You have {{ overdue_count }} overdue task(s)
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-2">
+          {% for task in overdue_list %}
+          <span
+            class="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
+          >
+            {{ task.subject }}: {{ task.description }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        <div class="flex items-center gap-4 card p-4 rounded-xl">
+          <div
+            class="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-400/10"
+          >
+            <i class="fas fa-book-open text-violet-400"></i>
+          </div>
+          <div class="flex flex-col">
+            <p class="text-3xl font-bold text-white">{{ total }}</p>
+            <p class="text-slate-400 text-sm">Total Tasks</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 card p-4 rounded-xl">
+          <div
+            class="flex items-center justify-center w-10 h-10 rounded-lg bg-green-600/10"
+          >
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="flex flex-col">
+            <p class="text-3xl font-bold text-white">{{ completed }}</p>
+            <p class="text-slate-400 text-sm">Completed</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 card p-4 rounded-xl">
+          <div
+            class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-600/10"
+          >
+            <i class="fas fa-clock text-amber-600"></i>
+          </div>
+          <div class="flex flex-col">
+            <p class="text-3xl font-bold text-white">{{ pending }}</p>
+            <p class="text-slate-400 text-sm">Pending</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 card p-4 rounded-xl">
+          <div
+            class="flex items-center justify-center w-10 h-10 rounded-lg bg-red-400/10"
+          >
+            <i class="fas fa-exclamation-triangle text-red-400"></i>
+          </div>
+          <div class="flex flex-col">
+            <p class="text-3xl font-bold text-white">{{ overdue_count }}</p>
+            <p class="text-slate-400 text-sm">Overdue</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="flex flex-col gap-6">
+          <div class="card p-6 rounded-xl h-fit transition-all duration-300">
+            <div
+              class="flex justify-between items-center mb-6 cursor-pointer"
+              onclick="toggleAddTask()"
+            >
+              <h2 class="text-xl font-bold text-blue-500">Add Task</h2>
+
+              <button
+                type="button"
+                id="toggleIcon"
+                class="text-slate-400 hover:text-white transition-transform duration-300"
+              >
+                <i class="fas fa-chevron-up"></i>
+              </button>
+            </div>
+
+            <div
+              id="addTaskContent"
+              class="overflow-hidden transition-all duration-300 max-h-[1000px]"
+            >
+              <form action="/add" method="POST" id="taskForm">
+                <div class="mb-4">
+                  <label class="block text-sm text-slate-400 mb-2"
+                    >Priority</label
+                  >
+                  <div class="flex gap-2 p-1 bg-slate-900 rounded-lg">
+                    <button
+                      type="button"
+                      onclick="setPrio('Low')"
+                      class="prio-btn flex-1 py-2 text-xs rounded-md border border-transparent transition"
+                    >
+                      Low
+                    </button>
+                    <button
+                      type="button"
+                      onclick="setPrio('Medium')"
+                      class="prio-btn flex-1 py-2 text-xs rounded-md border border-transparent transition active"
+                    >
+                      Medium
+                    </button>
+                    <button
+                      type="button"
+                      onclick="setPrio('High')"
+                      class="prio-btn flex-1 py-2 text-xs rounded-md border border-transparent transition"
+                    >
+                      High
+                    </button>
+                  </div>
+                  <input
+                    type="hidden"
+                    name="priority"
+                    id="priorityInput"
+                    value="Medium"
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label class="block text-sm text-slate-400 mb-2"
+                    >Subject</label
+                  >
+                  <input
+                    type="text"
+                    name="subject"
+                    placeholder="Math, Biology..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label class="block text-sm text-slate-400 mb-2"
+                    >Description</label
+                  >
+                  <input
+                    type="text"
+                    name="task"
+                    placeholder="Read Chapter 1..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div class="mb-6">
+                  <div class="calendar-test">
+                    <label class="block text-sm text-slate-400 mb-2"
+                      >Due Date</label
+                    >
+                    <input
+                      type="date"
+                      name="due_date"
+                      class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:outline-none focus:border-blue-500 text-white"
+                      required
+                    />
+                    <button type="button" class="button-test">📅</button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  class="w-full btn-blue py-3 rounded-lg font-bold flex items-center justify-center gap-2"
+                >
+                  <i class="fas fa-plus"></i> Add Task
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Tasks</h2>
+          </div>
+
+          <div class="space-y-3">
+            {% for task in tasks %}
+            <div
+              class="card p-4 rounded-lg flex justify-between items-center group"
+            >
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center text-blue-400"
+                >
+                  <i class="fas fa-book"></i>
+                </div>
+                <div>
+                  <p
+                    class="font-bold {% if task.status == 'Completed' %}line-through text-slate-500{% endif %}"
+                  >
+                    {{ task.subject }}
+                  </p>
+                  <p class="text-xs text-slate-400">
+                    {{ task.date }} • {{ task.priority }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 flex-shrink-0">
+                <span
+                  class="font-mono {% if task.priority == 'High' %}text-red-400{% else %}text-blue-400{% endif %} hidden sm:inline"
+                >
+                  {{ task.description }}
+                </span>
+                <div
+                  class="flex gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity items-center"
+                >
+                  <button
+                    class="p-2 text-slate-500 hover:text-blue-500 transition-colors"
+                    onclick="openEditModal('{{ task._id }}', '{{ task.subject }}', '{{ task.description }}', '{{ task.date }}', '{{ task.priority }}')"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  {% if task.status != 'Completed' %}
+                  <a
+                    href="{{ url_for('complete_task', task_id=task['_id']) }}"
+                    class="p-2 text-slate-500 hover:text-green-500 transition-colors flex items-center justify-center"
+                    ><i class="fas fa-check"></i
+                  ></a>
+                  {% endif %}
+                  <button
+                    onclick="confirmDelete('{{ task['_id'] }}')"
+                    class="p-2 text-slate-500 hover:text-red-500 transition-colors"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      id="editModal"
+      class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50"
+    >
+      <div class="card p-6 rounded-xl w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold text-blue-500 mb-4">Edit Task</h2>
+        <form id="editForm" method="POST">
+          <div class="mb-4">
+            <label class="block text-sm text-slate-400 mb-2">Subject</label>
+            <input
+              type="text"
+              name="subject"
+              id="editSubject"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm text-slate-400 mb-2">Description</label>
+            <input
+              type="text"
+              name="task"
+              id="editDescription"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <div class="calendar-test">
+              <label class="block text-sm text-slate-400 mb-2">
+                Due Date
+              </label>
+              <input
+                type="date"
+                name="due_date"
+                id="editDate"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white"
+                required
+              />
+              <div class="button-test" type="button">📅</div>
+            </div>
+          </div>
+          <input type="hidden" name="priority" id="editPriority" />
+          <div class="flex gap-3">
+            <button
+              type="button"
+              onclick="closeEditModal()"
+              class="flex-1 bg-slate-700 py-2 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 btn-blue py-2 rounded-lg font-bold"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div
+      id="deleteModal"
+      class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] backdrop-blur-sm"
+    >
+      <div
+        class="card p-6 rounded-2xl w-full max-w-sm mx-4 border border-slate-700 shadow-2xl transform transition-all"
+      >
+        <div class="flex items-center gap-4 mb-4 text-red-500">
+          <div
+            class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center"
+          >
+            <i class="fas fa-exclamation-triangle text-xl"></i>
+          </div>
+          <h2 class="text-xl font-bold">Delete Task?</h2>
+        </div>
+        <p class="text-slate-400 mb-6">
+          Are you sure you want to remove this task? This action cannot be
+          undone.
+        </p>
+        <div class="flex gap-3">
+          <button
+            onclick="closeDeleteModal()"
+            class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold transition"
+          >
+            Cancel
+          </button>
+          <a
+            id="confirmDeleteBtn"
+            href="#"
+            class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl font-bold text-center transition"
+          >
+            Delete
+          </a>
+        </div>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>

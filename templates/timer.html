@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pomodoro - BlueStudy Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --border-color: #334155;
+        --accent-blue: #2563eb;
+        --accent-hover: #1d4ed8;
+        --text-main: #f8fafc;
+        --text-dim: #94a3b8;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: "Inter", sans-serif;
+        min-height: 100vh;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+      }
+
+      .btn-blue {
+        background-color: var(--accent-blue);
+        transition: all 0.3s ease;
+      }
+
+      .btn-blue:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+      }
+
+      /* Timer Circular Progress */
+      .timer-circle {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring-bg {
+        stroke: var(--border-color);
+        stroke-width: 8;
+        fill: transparent;
+      }
+
+      .progress-ring-circle {
+        stroke: var(--accent-blue);
+        stroke-width: 8;
+        fill: transparent;
+        stroke-dasharray: 816.8; /* 2 * PI * r (r=130) */
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1s linear;
+        stroke-linecap: round;
+      }
+
+      .mode-btn.active {
+        background-color: var(--accent-blue);
+        color: white;
+      }
+
+      .timer-running .progress-ring-circle {
+        filter: drop-shadow(0 0 8px var(--accent-blue));
+      }
+
+      /* Settings Transition */
+      #settingsPanel {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .rotate-gear {
+        transform: rotate(90deg);
+      }
+      #dropdownMenu.show {
+        opacity: 1;
+        scale: 1;
+        pointer-events: auto;
+      }
+      .task-title {
+        transition: opacity 0.2s ease, text-decoration 0.2s ease;
+      }
+    </style>
+  </head>
+  <body class="pb-20">
+    <!-- Navbar -->
+    <nav
+      class="sticky top-0 z-40 backdrop-blur bg-slate-900/80 border-b border-slate-800 mb-8 rounded-xl px-4"
+    >
+      <div class="flex items-center justify-between h-20">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg"
+          >
+            <i class="fas fa-graduation-cap text-white text-xl"></i>
+          </div>
+          <a href="/" class="font-bold text-2xl text-white tracking-wide">
+            BlueStudy
+            <!-- <span class="ms-1 text-blue-500 text-sm font-medium">PRO</span> -->
+          </a>
+        </div>
+
+        <div class="hidden md:flex items-center gap-10 text-base">
+          <a
+            href="{{ url_for('index') }}"
+            class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'index' else 'text-slate-400 hover:text-white' }}"
+          >
+            <i class="fas fa-list-check"></i> Tasks
+          </a>
+          <a
+            href="{{ url_for('calendar') }}"
+            class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'calendar' else 'text-slate-400 hover:text-white' }}"
+          >
+            <i class="fas fa-calendar"></i> Calendar
+          </a>
+          <a
+            href="{{ url_for('flashcards') }}"
+            class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'flashcards' else 'text-slate-400 hover:text-white' }}"
+          >
+            <i class="fas fa-bolt"></i> Flashcards
+          </a>
+          <a
+            href="{{ url_for('library') }}"
+            class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'library' else 'text-slate-400 hover:text-white' }}"
+          >
+            <i class="fas fa-book"></i> Library
+          </a>
+          <a
+            href="{{ url_for('timer') }}"
+            class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'timer' else 'text-slate-400 hover:text-white' }}"
+          >
+            <i class="fas fa-clock"></i> Timer
+          </a>
+          <!-- <a
+              href="{{ url_for('subscribe') }}"
+              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'subscribe' else 'text-amber-400 hover:text-amber-300' }}"
+            >
+              <i class="fas fa-crown"></i> Upgrade to Pro
+            </a> -->
+        </div>
+
+        <div class="relative inline-block text-left" id="settingsDropdown">
+          <button
+            onclick="toggleSettings()"
+            class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition shadow-lg"
+          >
+            <i
+              class="fas fa-cog transition-transform duration-300"
+              id="settingsIcon"
+            ></i>
+          </button>
+
+          <div
+            id="dropdownMenu"
+            class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-slate-800 border border-slate-700 shadow-2xl opacity-0 scale-95 pointer-events-none transition-all duration-200 z-50 overflow-hidden"
+          >
+            <div class="md:hidden border-t border-slate-700">
+              <a
+                href="{{ url_for('index') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'index'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+              >
+                <i class="fas fa-list-check"></i> Tasks
+              </a>
+
+              <a
+                href="{{ url_for('calendar') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'calendar'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+              >
+                <i class="fas fa-calendar"></i> Calendar
+              </a>
+
+              <a
+                href="{{ url_for('flashcards') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'flashcards'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+              >
+                <i class="fas fa-bolt"></i> Flashcards
+              </a>
+
+              <a
+                href="{{ url_for('library') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'library'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+              >
+                <i class="fas fa-book"></i> Library
+              </a>
+
+              <a
+                href="{{ url_for('timer') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm transition
+                  {{ 'bg-blue-600 text-white font-semibold' if request.endpoint == 'timer'
+                  else 'text-slate-300 hover:bg-blue-600 hover:text-white' }}"
+              >
+                <i class="fas fa-clock"></i> Timer
+              </a>
+            </div>
+            <div class="flex flex-col">
+              <div class="px-4 py-3 border-b border-slate-700 bg-slate-900/50">
+                <p class="text-xs text-slate-500 uppercase font-bold">
+                  Logged in as
+                </p>
+                <p class="text-sm font-medium text-white truncate">
+                  {{ current_user.id }}
+                </p>
+              </div>
+
+              <a
+                href="{{ url_for('profile') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-blue-600 hover:text-white transition"
+              >
+                <i class="fas fa-user-circle mr-2"></i> Profile
+              </a>
+              <div class="border-t border-slate-700 mt-1 pt-1">
+                <a
+                  href="/logout"
+                  class="flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-600/20 hover:text-red-300 transition"
+                >
+                  <i class="fas fa-sign-out-alt w-4"></i>
+                  <span>Log Out</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4">
+      <div class="flex flex-col lg:flex-row gap-8 items-start justify-center">
+        <!-- Left Side: Timer Section -->
+        <div class="w-full max-w-xl">
+          <div
+            class="card rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-blue-900/10 flex flex-col items-center relative overflow-hidden"
+          >
+            <!-- Settings Panel Overlay (Both gear icons trigger this) -->
+            <div
+              id="settingsPanel"
+              class="absolute inset-0 bg-slate-900/98 backdrop-blur-xl z-50 p-8 flex flex-col translate-y-full opacity-0 pointer-events-none"
+            >
+              <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-bold">Timer Configuration</h3>
+                <button
+                  onclick="toggleTimerCustomization()"
+                  class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"
+                >
+                  <i class="fas fa-times text-lg"></i>
+                </button>
+              </div>
+              <div class="space-y-6 flex-1">
+                <div>
+                  <label
+                    class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-3"
+                    >Focus Duration (min)</label
+                  >
+                  <input
+                    type="number"
+                    id="focusInput"
+                    value="25"
+                    min="1"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500 transition text-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-3"
+                    >Short Break (min)</label
+                  >
+                  <input
+                    type="number"
+                    id="shortInput"
+                    value="5"
+                    min="1"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500 transition text-xl font-bold"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-3"
+                    >Long Break (min)</label
+                  >
+                  <input
+                    type="number"
+                    id="longInput"
+                    value="15"
+                    min="1"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500 transition text-xl font-bold"
+                  />
+                </div>
+              </div>
+              <button
+                onclick="saveSettings()"
+                class="btn-blue w-full py-5 rounded-3xl font-bold text-lg shadow-xl shadow-blue-600/20 mt-6"
+              >
+                Apply Changes
+              </button>
+            </div>
+
+            <!-- Mode Switcher -->
+            <div
+              class="flex gap-2 p-1.5 bg-slate-900/50 rounded-2xl mb-10 border border-slate-800 w-full max-w-sm"
+            >
+              <button
+                onclick="setMode('focus')"
+                id="focusBtn"
+                class="mode-btn active flex-1 py-2.5 rounded-xl font-semibold transition-all"
+              >
+                Focus
+              </button>
+              <button
+                onclick="setMode('short')"
+                id="shortBtn"
+                class="mode-btn flex-1 py-2.5 rounded-xl font-semibold transition-all text-slate-400 hover:text-white"
+              >
+                Short
+              </button>
+              <button
+                onclick="setMode('long')"
+                id="longBtn"
+                class="mode-btn flex-1 py-2.5 rounded-xl font-semibold transition-all text-slate-400 hover:text-white"
+              >
+                Long
+              </button>
+            </div>
+
+            <!-- Circular Timer -->
+            <div class="timer-circle mb-10" id="timerContainer">
+              <svg width="280" height="280">
+                <circle
+                  class="progress-ring-bg"
+                  cx="140"
+                  cy="140"
+                  r="130"
+                ></circle>
+                <circle
+                  id="progressRing"
+                  class="progress-ring-circle"
+                  cx="140"
+                  cy="140"
+                  r="130"
+                ></circle>
+              </svg>
+              <div class="text-center z-10">
+                <h1
+                  id="timerDisplay"
+                  class="text-7xl font-bold tracking-tight mb-2"
+                >
+                  25:00
+                </h1>
+                <p
+                  id="timerStatus"
+                  class="text-slate-500 font-medium uppercase tracking-widest text-sm"
+                >
+                  Stay Focused
+                </p>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-6">
+              <button
+                onclick="resetTimer()"
+                title="Reset"
+                class="w-14 h-14 rounded-2xl border border-slate-700 flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+              >
+                <i class="fas fa-redo-alt text-xl"></i>
+              </button>
+
+              <button
+                onclick="toggleTimer()"
+                id="playBtn"
+                class="btn-blue w-24 h-24 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-600/20"
+              >
+                <i id="playIcon" class="fas fa-play text-3xl ml-1"></i>
+              </button>
+
+              <!-- Card Settings Button (Linked to same overlay) -->
+              <button
+                onclick="toggleTimerCustomization()"
+                title="Settings"
+                class="w-14 h-14 rounded-2xl border border-slate-700 flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+              >
+                <i class="fas fa-cog text-xl"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Session Tasks -->
+        <div class="w-full max-w-md">
+          <div class="flex justify-between items-center mb-6 px-2">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+              <i class="fas fa-list-check text-blue-500"></i> Session Tasks
+            </h2>
+            <a
+              href="{{ url_for('index') }}"
+              class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition"
+            >
+              <i class="fas fa-plus text-sm"></i>
+            </a>
+          </div>
+
+          <div class="space-y-4">
+            {% for task in tasks %}
+            <div
+              class="card p-5 rounded-3xl flex items-center gap-4 group hover:border-blue-500/50 transition cursor-pointer"
+            >
+              <div
+                class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center group-hover:border-blue-500"
+                onclick="toggleTask('{{ task._id }}', this)"
+              >
+                {% if task.status == 'Completed' %}
+                <i class="fas fa-check text-blue-500 text-xs"></i>
+                {% endif %}
+              </div>
+              <div class="flex-1">
+                <p
+                  class="font-semibold text-slate-200 task-title {% if task.status == 'Completed' %}line-through opacity-60{% endif %}"
+                >
+                  {{ task.subject }}
+                </p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  {{ task.description }}
+                </p>
+              </div>
+              <div class="text-slate-500 text-sm whitespace-nowrap">
+                {{ task.priority }} <i class="fas fa-flag ml-1"></i>
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center py-10 opacity-50">
+              <p>No pending tasks for this session.</p>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div
+            class="mt-8 p-6 bg-blue-600/10 border border-blue-500/20 rounded-[2rem]"
+          >
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center border-r border-slate-800">
+                <p class="text-2xl font-bold text-white">{{ tasks|length }}</p>
+                <p
+                  class="text-[10px] text-slate-500 uppercase font-bold tracking-widest"
+                >
+                  Tasks Remaining
+                </p>
+              </div>
+              <div class="text-center">
+                <p class="text-2xl font-bold text-white">
+                  {{ current_user.id }}
+                </p>
+                <p
+                  class="text-[10px] text-slate-500 uppercase font-bold tracking-widest"
+                >
+                  Current User
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+      let timer;
+      let isRunning = false;
+      let currentMode = "focus";
+
+      let settings = {
+        focus: 25,
+        short: 5,
+        long: 15,
+      };
+
+      let timeLeft = settings.focus * 60;
+      let totalTime = settings.focus * 60;
+
+      const display = document.getElementById("timerDisplay");
+      const statusText = document.getElementById("timerStatus");
+      const playIcon = document.getElementById("playIcon");
+      const progressRing = document.getElementById("progressRing");
+      const timerContainer = document.getElementById("timerContainer");
+      const settingsPanel = document.getElementById("settingsPanel");
+      const ringCircumference = 2 * Math.PI * 130;
+
+      progressRing.style.strokeDasharray = ringCircumference;
+
+      function updateDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        display.innerText = `${minutes.toString().padStart(2, "0")}:${seconds
+          .toString()
+          .padStart(2, "0")}`;
+
+        const offset =
+          ringCircumference - (timeLeft / totalTime) * ringCircumference;
+        progressRing.style.strokeDashoffset = offset;
+        document.title = `${display.innerText} - BlueStudy`;
+      }
+
+      function toggleTimer() {
+        if (isRunning) pauseTimer();
+        else startTimer();
+      }
+
+      function startTimer() {
+        isRunning = true;
+        playIcon.classList.replace("fa-play", "fa-pause");
+        playIcon.classList.remove("ml-1");
+        timerContainer.classList.add("timer-running");
+
+        timer = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+          } else {
+            clearInterval(timer);
+            isRunning = false;
+            new Audio(
+              "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+            )
+              .play()
+              .catch(() => {});
+            setMode(currentMode === "focus" ? "short" : "focus");
+          }
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        playIcon.classList.replace("fa-pause", "fa-play");
+        playIcon.classList.add("ml-1");
+        timerContainer.classList.remove("timer-running");
+      }
+
+      function resetTimer() {
+        pauseTimer();
+        setMode(currentMode);
+      }
+
+      function setMode(mode) {
+        currentMode = mode;
+        pauseTimer();
+
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.classList.remove("active", "text-white");
+          btn.classList.add("text-slate-400");
+        });
+
+        if (mode === "focus") {
+          timeLeft = settings.focus * 60;
+          statusText.innerText = "Stay Focused";
+          document
+            .getElementById("focusBtn")
+            .classList.add("active", "text-white");
+        } else if (mode === "short") {
+          timeLeft = settings.short * 60;
+          statusText.innerText = "Quick Break";
+          document
+            .getElementById("shortBtn")
+            .classList.add("active", "text-white");
+        } else {
+          timeLeft = settings.long * 60;
+          statusText.innerText = "Long Break";
+          document
+            .getElementById("longBtn")
+            .classList.add("active", "text-white");
+        }
+
+        totalTime = timeLeft;
+        updateDisplay();
+      }
+      function toggleTimerCustomization() {
+        const isVisible = settingsPanel.classList.contains("translate-y-0");
+        if (isVisible) {
+          settingsPanel.classList.add(
+            "translate-y-full",
+            "opacity-0",
+            "pointer-events-none"
+          );
+          settingsPanel.classList.remove("translate-y-0", "opacity-100");
+        } else {
+          settingsPanel.classList.remove(
+            "translate-y-full",
+            "opacity-0",
+            "pointer-events-none"
+          );
+          settingsPanel.classList.add("translate-y-0", "opacity-100");
+        }
+      }
+
+      function saveSettings() {
+        settings.focus =
+          parseInt(document.getElementById("focusInput").value) || 25;
+        settings.short =
+          parseInt(document.getElementById("shortInput").value) || 5;
+        settings.long =
+          parseInt(document.getElementById("longInput").value) || 15;
+
+        setMode(currentMode);
+        toggleTimerCustomization(); // Close the timer card
+      }
+
+      updateDisplay();
+      function toggleTask(taskId, el) {
+        fetch(`/toggle_task/${taskId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const card = el.closest(".card");
+            const title = card.querySelector(".task-title");
+
+            if (data.status === "Completed") {
+              el.innerHTML = `<i class="fas fa-check text-blue-500 text-xs"></i>`;
+              title.classList.add("line-through", "opacity-60");
+            } else {
+              el.innerHTML = "";
+              title.classList.remove("line-through", "opacity-60");
+            }
+          });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,227 @@
+body {
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+.btn-blue {
+  background-color: #2563eb;
+  transition: 0.3s;
+}
+.btn-blue:hover {
+  background-color: #1d4ed8;
+}
+/* Calendar Specific Styles */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(40px, 1fr));
+  gap: 1px;
+  background-color: #334155;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.calendar-day {
+  background-color: #1f2a44;
+  min-height: 120px;
+  padding: 0.5rem;
+  transition: background-color 0.2s;
+}
+.calendar-day:hover {
+  background-color: #283354;
+}
+.calendar-day.other-month {
+  color: #7b879e;
+  background-color: #111c33;
+}
+.calendar-day.today {
+  border: 1px solid #2563eb;
+  box-shadow: 0 0 6px #2563eb;
+}
+.day-header {
+  background: linear-gradient(90deg, #0f172a, #1e293b, #1e3a8a);
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+}
+.task-indicator {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.indicator-high {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+.indicator-med {
+  background: rgba(34, 211, 238, 0.2);
+  color: #22d3ee;
+}
+.indicator-low {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+/* AI SIDE PANEL (Matching provided CSS) */
+#aiModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.45);
+}
+#aiModal.modal-active {
+  display: block !important;
+}
+.ai-panel {
+  background-color: #1e293b;
+  color: #f8fafc;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 380px;
+  max-width: 100%;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  border-radius: 1rem 0 0 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #334155;
+}
+#aiModal.modal-active .ai-panel {
+  transform: translateX(0);
+}
+.ai-header {
+  background-color: #2563eb;
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ai-response-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.ai-footer {
+  padding: 1rem;
+  background-color: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid #334155;
+}
+.ai-input-wrapper {
+  position: relative;
+}
+#aiInput {
+  width: 100%;
+  padding: 0.75rem 3rem 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  background-color: #0f172a;
+  color: #f8fafc;
+  outline: none;
+  resize: none;
+}
+.ai-send-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+.task-indicator.bg-red-600 {
+  background-color: #dc2626; /* Tailwinds red-600 */
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Settings Dropdown Animation */
+#dropdownMenu.show {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+  transform: translateY(5px);
+}
+
+.rotate-gear {
+  transform: rotate(90deg);
+}
+#dropdownMenu.show {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+  transform: translateY(5px);
+}
+
+.rotate-gear {
+  transform: rotate(90deg);
+}
+
+/* Optional: Add a nice separator for the mobile links */
+.md\:hidden.border-b {
+  background-color: rgba(15, 23, 42, 0.3);
+}
+@media (max-width: 640px) {
+  .calendar-day {
+    min-height: 70px;
+    padding: 0.25rem;
+  }
+
+  .day-header {
+    font-size: 0.65rem; /* Shorter headers like 'S' instead of 'SUN' can be done via JS */
+    padding: 0.5rem 0.25rem;
+  }
+
+  .task-indicator {
+    font-size: 0.6rem;
+    padding: 1px 2px;
+  }
+
+  /* Optional: Hide task text and just show dots on very small screens */
+  .task-indicator span {
+    display: none;
+  }
+}
+
+/* Wrap the grid in a container to allow horizontal scroll if it gets too narrow */
+.calendar-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
