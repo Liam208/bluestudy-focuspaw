@@ -16,7 +16,7 @@ from bson import ObjectId
 import json
 from flashcard_module import generate_flashcards_ai
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.secret_key = "super_secret_key_change_this"  # Required for sessions
 
 
