@@ -1,4 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    jsonify,
+    flash,
+    make_response,
+)
 import os
 from datetime import datetime
 from ai_module import ask_gemini
@@ -399,6 +408,43 @@ def profile():
 @app.route("/googlecca03cf2d9f78825.html")
 def google_verification():
     return app.send_static_file("googlecca03cf2d9f78825.html")
+
+
+@app.route("/sitemap.xml", methods=["GET"])
+def sitemap():
+    """Generate sitemap.xml. URLs are hardcoded for simplicity."""
+    pages = []
+    # Replace with your actual Render URL
+    base_url = "https://bluestudy-focuspaw.onrender.com"
+
+    # List of your static routes
+    # 'lastmod' is the last modification date
+    now = datetime.now().strftime("%Y-%m-%d")
+
+    # Add each page from your project
+    routes = [
+        ("/", 1.0),
+        ("/flashcards", 0.8),
+        ("/timer", 0.8),
+        ("/calendar", 0.8),
+        ("/library", 0.7),
+        ("/subscribe", 0.5),
+        ("/login", 0.3),
+    ]
+
+    for url, priority in routes:
+        pages.append({"loc": f"{base_url}{url}", "lastmod": now, "priority": priority})
+
+    sitemap_xml = render_template("sitemap_template.xml", pages=pages)
+    response = make_response(sitemap_xml)
+    response.headers["Content-Type"] = "application/xml"
+
+    return response
+
+
+@app.route("/robots.txt")
+def robots():
+    return "User-agent: *\nDisallow: /profile\nSitemap: https://bluestudy-focuspaw.onrender.com/sitemap.xml"
 
 
 if __name__ == "__main__":
