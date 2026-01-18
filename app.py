@@ -396,5 +396,10 @@ def profile():
     return render_template("profile.html", username=current_user.id)
 
 
+@app.route("/googlecca03cf2d9f78825.html")
+def google_verification():
+    return app.send_static_file("googlecca03cf2d9f78825.html")
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
