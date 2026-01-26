@@ -1,87 +1,376 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - BlueStudy</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+      body {
+        background-color: #0f172a;
+        color: #f8fafc;
+        font-family: sans-serif;
+      }
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
     </style>
-</head>
-<body class="flex items-center justify-center min-h-screen">
-
-    <div class="w-full max-w-md p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700">
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <i class="fas fa-graduation-cap text-3xl text-white"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-white">Welcome to BlueStudy</h1>
-            <p class="text-slate-400 text-sm">Focus better, study smarter.</p>
+  </head>
+  <body class="flex items-center justify-center min-h-screen p-4">
+    <div
+      class="w-full max-w-md p-8 bg-slate-800 rounded-2xl shadow-2xl border border-slate-700"
+    >
+      <!-- Header Section -->
+      <div class="text-center mb-8">
+        <div
+          class="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+        >
+          <i class="fas fa-graduation-cap text-3xl text-white"></i>
         </div>
+        <h1 class="text-2xl font-bold text-white">Welcome to BlueStudy</h1>
+        <p class="text-slate-400 text-sm">Focus better, study smarter.</p>
+      </div>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="mb-4 p-3 bg-red-500/20 border border-red-500 rounded text-red-200 text-sm text-center">
-                    {{ messages[0] }}
-                </div>
-            {% endif %}
-        {% endwith %}
+      <!-- Notification Toast (Replaces alerts) -->
+      <div
+        id="statusMessage"
+        class="hidden mb-4 p-3 rounded text-sm text-center border"
+      ></div>
 
-        <div class="flex bg-slate-900 p-1 rounded-lg mb-6">
-            <button onclick="showLogin()" id="tabLogin" class="flex-1 py-2 text-sm font-bold rounded-md bg-blue-600 text-white transition">Log In</button>
-            <button onclick="showSignup()" id="tabSignup" class="flex-1 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition">Sign Up</button>
+      <!-- Tab Switcher (Hidden when in Forgot/Reset mode) -->
+      <div id="authTabs" class="flex bg-slate-900 p-1 rounded-lg mb-6">
+        <button
+          onclick="showLogin()"
+          id="tabLogin"
+          class="flex-1 py-2 text-sm font-bold rounded-md bg-blue-600 text-white transition"
+        >
+          Log In
+        </button>
+        <button
+          onclick="showSignup()"
+          id="tabSignup"
+          class="flex-1 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition"
+        >
+          Sign Up
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" action="/login" method="POST" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Username or Email</label
+          >
+          <input
+            type="text"
+            name="identifier"
+            placeholder="e.g. alex_study"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+            required
+          />
         </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Password</label
+          >
+          <input
+            type="password"
+            name="password"
+            placeholder="••••••••"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+            required
+          />
+        </div>
+        <div class="text-right">
+          <button
+            type="button"
+            onclick="showForgot()"
+            class="text-xs text-blue-400 hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-600/20"
+        >
+          Log In
+        </button>
+      </form>
 
-        <form id="loginForm" action="/login" method="POST" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Username</label>
-                <input type="text" name="username" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition" required>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Password</label>
-                <input type="password" name="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition" required>
-            </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-600/20">Log In</button>
-        </form>
+      <!-- Signup Form -->
+      <form
+        id="signupForm"
+        action="/signup"
+        method="POST"
+        class="space-y-4 hidden"
+      >
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Choose Username</label
+          >
+          <input
+            type="text"
+            name="username"
+            placeholder="alex_study"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Email Address</label
+          >
+          <input
+            type="email"
+            name="email"
+            placeholder="alex@example.com"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Choose Password</label
+          >
+          <input
+            type="password"
+            name="password"
+            placeholder="••••••••"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-green-600/20"
+        >
+          Create Account
+        </button>
+      </form>
 
-        <form id="signupForm" action="/signup" method="POST" class="space-y-4 hidden">
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Choose Username</label>
-                <input type="text" name="username" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition" required>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Choose Password</label>
-                <input type="password" name="password" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition" required>
-            </div>
-            <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-green-600/20">Create Account</button>
-        </form>
+      <!-- Forgot Password Form -->
+      <div id="forgotForm" class="space-y-4 hidden">
+        <div class="text-center mb-2">
+          <h2 class="text-white font-bold text-lg">Reset Password</h2>
+          <p class="text-slate-400 text-xs">
+            Enter your email to receive a 6-digit verification code.
+          </p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >Email Address</label
+          >
+          <input
+            type="email"
+            id="forgotEmail"
+            placeholder="your@email.com"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+          />
+        </div>
+        <button
+          onclick="sendResetCode()"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition"
+        >
+          Send Code
+        </button>
+        <button
+          onclick="showLogin()"
+          class="w-full text-slate-400 hover:text-white text-sm transition"
+        >
+          Back to Login
+        </button>
+      </div>
+
+      <!-- Reset Password Verification Form -->
+      <div id="resetForm" class="space-y-4 hidden">
+        <div class="text-center mb-2">
+          <h2 class="text-white font-bold text-lg">Create New Password</h2>
+          <p class="text-slate-400 text-xs">
+            Verify your identity and set a new password.
+          </p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >6-Digit Code</label
+          >
+          <input
+            type="text"
+            id="resetCode"
+            maxlength="6"
+            placeholder="000000"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white text-center tracking-widest"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1"
+            >New Password</label
+          >
+          <input
+            type="password"
+            id="newPassword"
+            placeholder="••••••••"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm outline-none focus:border-blue-500 transition text-white"
+          />
+        </div>
+        <button
+          onclick="submitNewPassword()"
+          class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition"
+        >
+          Update Password
+        </button>
+        <button
+          onclick="showForgot()"
+          class="w-full text-slate-400 hover:text-white text-sm transition"
+        >
+          Resend Code?
+        </button>
+      </div>
     </div>
 
     <script>
-        const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-        const tabLogin = document.getElementById('tabLogin');
-        const tabSignup = document.getElementById('tabSignup');
+      const loginForm = document.getElementById("loginForm");
+      const signupForm = document.getElementById("signupForm");
+      const forgotForm = document.getElementById("forgotForm");
+      const resetForm = document.getElementById("resetForm");
+      const authTabs = document.getElementById("authTabs");
+      const tabLogin = document.getElementById("tabLogin");
+      const tabSignup = document.getElementById("tabSignup");
+      const statusMessage = document.getElementById("statusMessage");
 
-        function showLogin() {
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-            tabLogin.classList.add('bg-blue-600', 'text-white');
-            tabLogin.classList.remove('text-slate-400');
-            tabSignup.classList.remove('bg-blue-600', 'text-white');
-            tabSignup.classList.add('text-slate-400');
+      function showMessage(msg, type = "error") {
+        statusMessage.textContent = msg;
+        statusMessage.classList.remove(
+          "hidden",
+          "bg-red-500/20",
+          "border-red-500",
+          "text-red-200",
+          "bg-green-500/20",
+          "border-green-500",
+          "text-green-200",
+        );
+
+        if (type === "error") {
+          statusMessage.classList.add(
+            "bg-red-500/20",
+            "border-red-500",
+            "text-red-200",
+          );
+        } else {
+          statusMessage.classList.add(
+            "bg-green-500/20",
+            "border-green-500",
+            "text-green-200",
+          );
+        }
+        statusMessage.classList.remove("hidden");
+      }
+
+      function hideForms() {
+        loginForm.classList.add("hidden");
+        signupForm.classList.add("hidden");
+        forgotForm.classList.add("hidden");
+        resetForm.classList.add("hidden");
+        statusMessage.classList.add("hidden");
+      }
+
+      function showLogin() {
+        hideForms();
+        authTabs.classList.remove("hidden");
+        loginForm.classList.remove("hidden");
+        tabLogin.classList.add("bg-blue-600", "text-white");
+        tabLogin.classList.remove("text-slate-400");
+        tabSignup.classList.remove("bg-blue-600", "text-white");
+        tabSignup.classList.add("text-slate-400");
+      }
+
+      function showSignup() {
+        hideForms();
+        authTabs.classList.remove("hidden");
+        signupForm.classList.remove("hidden");
+        tabSignup.classList.add("bg-blue-600", "text-white");
+        tabSignup.classList.remove("text-slate-400");
+        tabLogin.classList.remove("bg-blue-600", "text-white");
+        tabLogin.classList.add("text-slate-400");
+      }
+
+      function showForgot() {
+        hideForms();
+        authTabs.classList.add("hidden");
+        forgotForm.classList.remove("hidden");
+      }
+
+      async function sendResetCode() {
+        const email = document.getElementById("forgotEmail").value;
+        if (!email) {
+          showMessage("Please enter your email address.");
+          return;
         }
 
-        function showSignup() {
-            signupForm.classList.remove('hidden');
-            loginForm.classList.add('hidden');
-            tabSignup.classList.add('bg-blue-600', 'text-white');
-            tabSignup.classList.remove('text-slate-400');
-            tabLogin.classList.remove('bg-blue-600', 'text-white');
-            tabLogin.classList.add('text-slate-400');
+        try {
+          const response = await fetch("/forgot-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `email=${encodeURIComponent(email)}`,
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showMessage(result.message, "success");
+            forgotForm.classList.add("hidden");
+            resetForm.classList.remove("hidden");
+          } else {
+            showMessage(result.message);
+          }
+        } catch (e) {
+          showMessage("Server connection failed. Try again later.");
         }
+      }
+
+      async function submitNewPassword() {
+        const email = document.getElementById("forgotEmail").value;
+        const code = document.getElementById("resetCode").value;
+        const password = document.getElementById("newPassword").value;
+
+        if (!code || !password) {
+          showMessage("Please fill in all fields.");
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.append("email", email);
+        params.append("code", code);
+        params.append("password", password);
+
+        try {
+          const response = await fetch("/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params,
+          });
+
+          if (response.ok) {
+            showMessage("Password updated! Redirecting...", "success");
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            const result = await response.json();
+            showMessage(result.message || "Failed to update password.");
+          }
+        } catch (e) {
+          showMessage("Server connection failed.");
+        }
+      }
     </script>
-</body>
+  </body>
 </html>

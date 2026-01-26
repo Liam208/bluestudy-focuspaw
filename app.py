@@ -1,3 +1,4 @@
+import random
 from flask import (
     Flask,
     render_template,
@@ -8,6 +9,7 @@ from flask import (
     flash,
     make_response,
 )
+from flask_mail import Mail, Message
 import os
 from datetime import datetime
 from ai_module import ask_gemini
@@ -28,6 +30,14 @@ from flashcard_module import generate_flashcards_ai
 app = Flask(__name__, static_folder="static")
 app.secret_key = "super_secret_key_change_this"  # Required for sessions
 
+mail_username = os.getenv("MAIL_USERNAME")
+
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USERNAME"] = mail_username
+app.config["MAIL_PASSWORD"] = os.getenv("app_pass")
+app.config["MAIL_USE_TLS"] = True
+mail = Mail(app)
 
 # --- LOGIN SETUP ---
 login_manager = LoginManager()
@@ -54,36 +64,42 @@ def load_user(user_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
+        identifier = request.form.get("identifier")
         password = request.form.get("password")
 
-        user_data = users_collection.find_one({"username": username})
+        user_data = users_collection.find_one(
+            {"$or": [{"username": identifier}, {"email": identifier}]}
+        )
+
         if user_data:
             if check_password_hash(user_data["password"], password):
-                login_user(User(username))
+
+                login_user(User(user_data["username"]))
                 return redirect(url_for("index"))
             else:
                 flash("Incorrect password. Please try again.")
                 return redirect(url_for("login"))
 
-        flash("User not found. Please sign up.")
+        flash("Account not found. Please sign up.")
     return render_template("login.html")
 
 
 @app.route("/signup", methods=["POST"])
 def signup():
     username = request.form.get("username")
+    email = request.form.get("email")
     password = request.form.get("password")
 
     # Check if user exists
-    if users_collection.find_one({"username": username}):
-        flash("Username already exists!")
+    if users_collection.find_one({"$or": [{"username": username}, {"email": email}]}):
+        flash("Username or Email already exists!")
         return redirect(url_for("login"))
 
     # Create new user
     hashed_pw = generate_password_hash(password, method="scrypt")
     new_user = {
         "username": username,
+        "email": email,
         "password": hashed_pw,
         "created_at": datetime.now(),
     }
@@ -91,6 +107,202 @@ def signup():
     users_collection.insert_one(new_user)
     login_user(User(username))
     return redirect(url_for("index"))
+
+
+@app.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    email = request.form.get("email")
+    user_data = users_collection.find_one({"email": email})
+
+    if user_data:
+        reset_code = str(random.randint(100000, 999999))
+        users_collection.update_one(
+            {"email": email}, {"$set": {"reset_code": reset_code}}
+        )
+        msg = Message(
+            subject="Password Reset Code - BlueStudy",
+            sender=("BlueStudy App", mail_username),
+            recipients=[email],
+        )
+        msg.body = f"Your password reset code is: {reset_code}"
+        mail.send(msg)
+        return jsonify({"status": "success", "message": "Reset code sent to email."})
+    return jsonify({"status": "error", "message": "Email not found."}), 404
+
+
+@app.route("/reset-password", methods=["POST"])
+def reset_password():
+    email = request.form.get("email")
+    code = request.form.get("code")
+    new_password = request.form.get("password")  # Matches the 'password' key in JS
+
+    # Safety Check: If new_password is None or empty, stop here
+    if not new_password:
+        return jsonify({"status": "error", "message": "No password provided"}), 400
+
+    user = users_collection.find_one({"email": email, "reset_code": code})
+
+    if user:
+        # This is where your error was happening
+        hashed_pw = generate_password_hash(new_password, method="scrypt")
+
+        users_collection.update_one(
+            {"email": email},
+            {"$set": {"password": hashed_pw}, "$unset": {"reset_code": ""}},
+        )
+        return jsonify({"status": "success"})
+
+    return jsonify({"status": "error", "message": "Invalid code or email"}), 400
+
+
+@app.route("/request_email_verification", methods=["POST"])
+@login_required
+def request_email_verification():
+    new_email = request.form.get("email")
+
+    # Fetch user data to get the current (old) email
+    user_data = users_collection.find_one({"username": current_user.id})
+    old_email = user_data.get("email")
+
+    if not old_email:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "No current email found for this account.",
+                }
+            ),
+            400,
+        )
+
+    if users_collection.find_one({"email": new_email}):
+        return (
+            jsonify({"status": "error", "message": "New email is already in use."}),
+            400,
+        )
+
+    # Generate two different 6-digit codes
+    code_old = str(random.randint(100000, 999999))
+    code_new = str(random.randint(100000, 999999))
+
+    # Store both codes and the pending email in the database
+    users_collection.update_one(
+        {"username": current_user.id},
+        {
+            "$set": {
+                "pending_email": new_email,
+                "code_old": code_old,
+                "code_new": code_new,
+            }
+        },
+    )
+
+    try:
+        # Send to Old Email
+        msg_old = Message(
+            "Confirm Email Change - BlueStudy",
+            sender=app.config["MAIL_USERNAME"],
+            recipients=[old_email],
+        )
+        msg_old.body = f"Verification Code for OLD email: {code_old}"
+        mail.send(msg_old)
+
+        # Send to New Email
+        msg_new = Message(
+            "Verify Your New Email - BlueStudy",
+            sender=app.config["MAIL_USERNAME"],
+            recipients=[new_email],
+        )
+        msg_new.body = f"Verification Code for NEW email: {code_new}"
+        mail.send(msg_new)
+
+        return jsonify({"status": "success", "message": "Codes sent to both emails!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": "Failed to send emails."}), 500
+
+
+@app.route("/verify_email_update", methods=["POST"])
+@login_required
+def verify_email_update():
+    user_code_old = request.form.get("code_old")
+    user_code_new = request.form.get("code_new")
+
+    user_data = users_collection.find_one({"username": current_user.id})
+
+    if (
+        user_data
+        and user_data.get("code_old") == user_code_old
+        and user_data.get("code_new") == user_code_new
+    ):
+
+        new_email = user_data.get("pending_email")
+
+        # Update the email and clear verification data
+        users_collection.update_one(
+            {"username": current_user.id},
+            {
+                "$set": {"email": new_email},
+                "$unset": {"pending_email": "", "code_old": "", "code_new": ""},
+            },
+        )
+        flash("Email updated successfully!")
+        return jsonify({"status": "success"})
+
+    return (
+        jsonify(
+            {"status": "error", "message": "Invalid codes. Please check both emails."}
+        ),
+        400,
+    )
+
+
+@app.route("/request_password_reset_code", methods=["POST"])
+@login_required
+def request_password_reset_code():
+    user_data = users_collection.find_one({"username": current_user.id})
+    email = user_data.get("email")
+
+    if not email:
+        return (
+            jsonify({"status": "error", "message": "No email linked to account."}),
+            400,
+        )
+
+    # Generate and store code
+    code = str(random.randint(100000, 999999))
+    users_collection.update_one(
+        {"username": current_user.id}, {"$set": {"password_reset_code": code}}
+    )
+
+    # Send Email
+    msg = Message(
+        "Security Alert: Password Change Request",
+        sender=app.config["MAIL_USERNAME"],
+        recipients=[email],
+    )
+    msg.body = f"Your security code to change your password is: {code}. If you did not request this, please secure your account immediately."
+    mail.send(msg)
+
+    return jsonify({"status": "success", "message": "Verification code sent!"})
+
+
+@app.route("/verify_and_update_password", methods=["POST"])
+@login_required
+def verify_and_update_password():
+    code = request.form.get("code")
+    new_password = request.form.get("new_password")
+
+    user_data = users_collection.find_one({"username": current_user.id})
+
+    if user_data and user_data.get("password_reset_code") == code:
+        hashed_pw = generate_password_hash(new_password, method="scrypt")
+        users_collection.update_one(
+            {"username": current_user.id},
+            {"$set": {"password": hashed_pw}, "$unset": {"password_reset_code": ""}},
+        )
+        return jsonify({"status": "success", "message": "Password updated!"})
+
+    return jsonify({"status": "error", "message": "Invalid verification code."}), 400
 
 
 @app.route("/logout")
@@ -363,6 +575,8 @@ def subscribe():
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
+    user_data = users_collection.find_one({"username": current_user.id})
+    email = user_data.get("email")
     if request.method == "POST":
         action = request.form.get("action")
 
@@ -383,6 +597,17 @@ def profile():
                 new_user_obj = User(new_username)
                 login_user(new_user_obj)
                 flash("Username updated successfully!")
+        # --- Handle Email Change ---
+        elif action == "update_email":
+            new_email = request.form.get("email")
+
+            if users_collection.find_one({"email": new_email}):
+                flash("Email already in use.")
+            else:
+                users_collection.update_one(
+                    {"username": current_user.id}, {"$set": {"email": new_email}}
+                )
+                flash("Email updated successfully!")
 
         # --- Handle Password Change ---
         elif action == "update_password":
@@ -400,9 +625,10 @@ def profile():
                 flash("Password updated successfully!")
             else:
                 flash("Current password incorrect.")
+
         return redirect(url_for("profile"))
 
-    return render_template("profile.html", username=current_user.id)
+    return render_template("profile.html", username=current_user.id, email=email)
 
 
 @app.route("/googlecca03cf2d9f78825.html")

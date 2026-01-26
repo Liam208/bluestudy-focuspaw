@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -14,53 +14,112 @@
         --bg-main: #0f172a;
         --card-bg: #1e293b;
         --border-color: #334155;
-        --accent-blue: #2563eb;
-        --accent-hover: #1d4ed8;
+        --accent-blue: #3b82f6;
+        --accent-hover: #2563eb;
       }
       body {
         background-color: var(--bg-main);
         color: #f8fafc;
-        font-family: sans-serif;
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
       .card {
         background-color: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: 1rem;
+        transition: border-color 0.2s ease;
       }
       .input-field {
         background-color: #0f172a;
         border: 1px solid var(--border-color);
         color: white;
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .input-field:focus {
         border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         outline: none;
       }
       .btn-blue {
         background-color: var(--accent-blue);
         color: white;
-        transition: 0.3s;
+        transition: all 0.2s;
+      }
+      .verification-input {
+        letter-spacing: 0.5rem;
+      }
+
+      /* Custom Toast Styles */
+      #toast-container {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .toast {
+        min-width: 300px;
+        padding: 1rem 1.25rem;
+        border-radius: 0.75rem;
+        background: #1e293b;
+        border-left: 4px solid #3b82f6;
+        color: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideIn 0.3s ease-out forwards;
+      }
+      .toast.error {
+        border-left-color: #ef4444;
+      }
+      .toast.success {
+        border-left-color: #10b981;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
       }
     </style>
   </head>
-  <body class="min-h-screen">
+  <body class="min-h-screen pb-12">
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
     <header class="p-6 max-w-6xl mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
         <div
-          class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+          class="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20"
         >
           <i class="fas fa-graduation-cap text-white"></i>
         </div>
-        <h1 class="text-2xl font-bold">
-          BlueStudy <span class="text-blue-500 text-sm">PRO</span>
-        </h1>
+        <h1 class="text-2xl font-bold tracking-tight">BlueStudy</h1>
       </div>
       <a
         href="{{ url_for('index') }}"
-        class="text-slate-400 hover:text-white transition flex items-center gap-2"
+        class="text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700"
       >
-        <i class="fas fa-arrow-left"></i><span>Back to Tasks</span>
+        <i class="fas fa-arrow-left text-xs"></i><span>Back to Tasks</span>
       </a>
     </header>
 
@@ -68,22 +127,28 @@
       class="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-4 gap-8"
     >
       <aside class="md:col-span-1">
-        <div class="card p-4">
-          <div class="flex items-center gap-4 mb-6 p-2">
+        <div class="card p-5 sticky top-6">
+          <div class="flex items-center gap-4 mb-6 p-1">
             <div
-              class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-xl font-bold text-blue-400 border border-slate-600"
+              class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xl font-bold text-blue-400 border border-slate-600"
             >
               {{ username[0]|upper }}
             </div>
             <div>
-              <p class="font-bold leading-tight">{{ username }}</p>
-              <p class="text-xs text-slate-500">Student Plan</p>
+              <p class="font-bold leading-tight text-slate-100">
+                {{ username }}
+              </p>
+              <p
+                class="text-xs text-slate-500 mt-0.5 tracking-wide uppercase font-semibold"
+              >
+                Student Plan
+              </p>
             </div>
           </div>
           <nav class="space-y-1">
             <a
               href="{{ url_for('logout') }}"
-              class="flex items-center gap-3 p-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-400/10"
+              class="flex items-center gap-3 p-3 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-400/10 transition-colors"
             >
               <i class="fas fa-sign-out-alt"></i> Sign Out
             </a>
@@ -92,40 +157,39 @@
       </aside>
 
       <div class="md:col-span-3 space-y-6">
-        {% with messages = get_flashed_messages() %} {% if messages %} {% for
-        message in messages %}
-        <div
-          class="bg-blue-600/20 border border-blue-500 text-blue-100 p-4 rounded-xl mb-4"
-        >
-          {{ message }}
-        </div>
-        {% endfor %} {% endif %} {% endwith %}
-
         <section class="card p-6 md:p-8">
-          <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
-            <i class="fas fa-id-card text-blue-500"></i> Account Identity
+          <h2
+            class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-100"
+          >
+            <span
+              class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center"
+            >
+              <i class="fas fa-id-card text-blue-500 text-sm"></i>
+            </span>
+            Account Identity
           </h2>
           <form
             action="{{ url_for('profile') }}"
             method="POST"
-            class="space-y-4 max-w-md"
+            class="space-y-5 max-w-md"
           >
             <input type="hidden" name="action" value="update_username" />
             <div>
-              <label class="block text-sm font-medium text-slate-400 mb-2"
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2"
                 >Display Username</label
               >
               <input
                 type="text"
                 name="username"
-                class="input-field w-full p-3 rounded-xl"
+                class="input-field w-full p-3.5 rounded-xl"
                 value="{{ username }}"
                 required
               />
             </div>
             <button
               type="submit"
-              class="btn-blue px-6 py-2.5 rounded-xl font-semibold"
+              class="btn-blue px-6 py-3 rounded-xl font-bold"
             >
               Update Username
             </button>
@@ -133,106 +197,285 @@
         </section>
 
         <section class="card p-6 md:p-8">
-          <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
-            <i class="fas fa-key text-orange-500"></i> Security
+          <h2
+            class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-100"
+          >
+            <span
+              class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center"
+            >
+              <i class="fas fa-envelope text-emerald-500 text-sm"></i>
+            </span>
+            Email Address
           </h2>
 
-          <form
-            id="passwordForm"
-            action="{{ url_for('profile') }}"
-            method="POST"
-            class="space-y-4 max-w-md"
+          <div class="space-y-4 max-w-md">
+            <div id="emailStep1">
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2"
+                >Change Email Address</label
+              >
+              <div
+                class="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 mb-5 flex items-center gap-3"
+              >
+                <div
+                  class="text-slate-500 text-xs uppercase font-bold px-2 py-1 bg-slate-800 rounded"
+                >
+                  Current
+                </div>
+                <p class="text-sm text-slate-300 font-medium">{{ email }}</p>
+              </div>
+              <input
+                type="email"
+                id="newEmailInput"
+                class="input-field w-full p-3.5 rounded-xl mb-4"
+                placeholder="new-email@example.com"
+              />
+              <button
+                onclick="sendDualVerificationCodes()"
+                id="sendCodeBtn"
+                class="btn-blue px-6 py-3 rounded-xl font-bold"
+              >
+                Send Verification Codes
+              </button>
+            </div>
+
+            <div id="emailStep2" class="hidden space-y-6">
+              <div
+                class="p-4 bg-blue-600/10 border border-blue-500/30 rounded-xl flex items-start gap-3"
+              >
+                <i class="fas fa-shield-halved text-blue-500 mt-1"></i>
+                <p class="text-sm text-blue-200">
+                  Unique codes were sent to <strong>both</strong> old and new
+                  email addresses.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 gap-5">
+                <input
+                  type="text"
+                  id="codeOldInput"
+                  class="input-field w-full p-4 rounded-xl text-center verification-input font-mono text-xl"
+                  placeholder="OLD CODE"
+                  maxlength="6"
+                />
+                <input
+                  type="text"
+                  id="codeNewInput"
+                  class="input-field w-full p-4 rounded-xl text-center verification-input font-mono text-xl"
+                  placeholder="NEW CODE"
+                  maxlength="6"
+                />
+              </div>
+              <div class="flex flex-col gap-3">
+                <button
+                  onclick="submitDualEmailVerify()"
+                  class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3.5 rounded-xl font-bold transition"
+                >
+                  Verify & Update Email
+                </button>
+                <button
+                  onclick="resetEmailForm()"
+                  class="text-slate-500 text-sm font-medium hover:text-white transition-colors text-center"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-6 md:p-8">
+          <h2
+            class="text-xl font-bold mb-6 flex items-center gap-3 text-slate-100"
           >
-            <input type="hidden" name="action" value="update_password" />
-
-            <div
-              id="passwordError"
-              class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm"
+            <span
+              class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center"
             >
-              <i class="fas fa-exclamation-circle mr-2"></i>
-              <span id="errorText"></span>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-400 mb-2"
-                >Current Password</label
-              >
-              <input
-                type="password"
-                id="currentPassword"
-                name="current_password"
-                class="input-field w-full p-3 rounded-xl"
-                required
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-400 mb-2"
-                >New Password</label
-              >
-              <input
-                type="password"
-                id="newPassword"
-                name="new_password"
-                class="input-field w-full p-3 rounded-xl"
-                required
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-400 mb-2"
-                >Confirm New Password</label
-              >
-              <input
-                type="password"
-                id="confirmPassword"
-                class="input-field w-full p-3 rounded-xl"
-                required
-              />
-            </div>
-
+              <i class="fas fa-lock text-amber-500 text-sm"></i>
+            </span>
+            Security
+          </h2>
+          <div id="pwStep1" class="space-y-4">
+            <p class="text-sm text-slate-400">
+              To change your password, we'll send a code to your email.
+            </p>
             <button
-              type="submit"
-              class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl font-semibold transition"
+              onclick="sendPasswordCode()"
+              id="sendPwBtn"
+              class="btn-blue px-6 py-3 rounded-xl font-bold"
             >
-              Change Password
+              Send Reset Code
             </button>
-          </form>
+          </div>
+          <div id="pwStep2" class="hidden space-y-5 max-w-md">
+            <input
+              type="text"
+              id="pwVerifyCode"
+              class="input-field w-full p-3.5 rounded-xl text-center verification-input font-mono"
+              placeholder="CODE"
+              maxlength="6"
+            />
+            <input
+              type="password"
+              id="pwNewPass"
+              class="input-field w-full p-3.5 rounded-xl"
+              placeholder="New Password"
+            />
+            <button
+              onclick="submitPasswordChange()"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3.5 rounded-xl font-bold transition"
+            >
+              Update Password
+            </button>
+          </div>
         </section>
       </div>
     </main>
 
     <script>
-      // Simple client-side check to make sure passwords match before sending to Python
-      const passwordForm = document.getElementById("passwordForm");
-      const passwordError = document.getElementById("passwordError");
-      const errorText = document.getElementById("errorText");
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
 
-      passwordForm.addEventListener("submit", (e) => {
-        const newPass = document.getElementById("newPassword").value;
-        const confirmPass = document.getElementById("confirmPassword").value;
+        const icon =
+          type === "success"
+            ? "fa-check-circle"
+            : type === "error"
+              ? "fa-exclamation-circle"
+              : "fa-info-circle";
 
-        // 1. Hide error box initially on every submit attempt
-        passwordError.classList.add("hidden");
+        toast.innerHTML = `
+          <i class="fas ${icon}"></i>
+          <span class="text-sm font-medium">${message}</span>
+        `;
 
-        // 2. Client-side Validation
-        if (newPass !== confirmPass) {
-          e.preventDefault(); // Stop the form from sending to Python
-          errorText.innerText = "New passwords do not match!";
-          passwordError.classList.remove("hidden");
-          return;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = "fadeOut 0.5s ease-out forwards";
+          setTimeout(() => toast.remove(), 500);
+        }, 4000);
+      }
+
+      async function sendDualVerificationCodes() {
+        const email = document.getElementById("newEmailInput").value;
+        const btn = document.getElementById("sendCodeBtn");
+        if (!email)
+          return showToast("Please enter your new email address.", "error");
+
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+
+        const params = new URLSearchParams();
+        params.append("email", email);
+
+        try {
+          const response = await fetch("/request_email_verification", {
+            method: "POST",
+            body: params,
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showToast("Verification codes sent successfully!", "success");
+            document.getElementById("emailStep1").classList.add("hidden");
+            document.getElementById("emailStep2").classList.remove("hidden");
+          } else {
+            showToast(result.message, "error");
+            btn.disabled = false;
+            btn.innerText = "Send Verification Codes";
+          }
+        } catch (e) {
+          showToast("Failed to send codes. Try again.", "error");
+          btn.disabled = false;
         }
+      }
 
-        if (newPass.length < 8) {
-          e.preventDefault();
-          errorText.innerText = "New password must be at least 8 characters.";
-          passwordError.classList.remove("hidden");
-          return;
+      async function submitDualEmailVerify() {
+        const codeOld = document.getElementById("codeOldInput").value;
+        const codeNew = document.getElementById("codeNewInput").value;
+        if (!codeOld || !codeNew)
+          return showToast("Please enter both verification codes.", "error");
+
+        const params = new URLSearchParams();
+        params.append("code_old", codeOld);
+        params.append("code_new", codeNew);
+
+        try {
+          const response = await fetch("/verify_email_update", {
+            method: "POST",
+            body: params,
+          });
+          if (response.ok) {
+            showToast("Email updated successfully!", "success");
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            const result = await response.json();
+            showToast(result.message || "Verification failed.", "error");
+          }
+        } catch (e) {
+          showToast("A connection error occurred.", "error");
         }
+      }
 
-        // If it reaches here, the form submits to app.py
-        // app.py will then check if 'current_password' is correct in the DB.
-      });
+      async function sendPasswordCode() {
+        const btn = document.getElementById("sendPwBtn");
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+
+        try {
+          const response = await fetch("/request_password_reset_code", {
+            method: "POST",
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showToast("Reset code sent to your email.", "success");
+            document.getElementById("pwStep1").classList.add("hidden");
+            document.getElementById("pwStep2").classList.remove("hidden");
+          } else {
+            showToast(result.message, "error");
+            btn.disabled = false;
+            btn.innerText = "Send Reset Code";
+          }
+        } catch (e) {
+          showToast("Failed to connect to server.", "error");
+          btn.disabled = false;
+        }
+      }
+
+      async function submitPasswordChange() {
+        const code = document.getElementById("pwVerifyCode").value;
+        const newPass = document.getElementById("pwNewPass").value;
+        if (!code || !newPass)
+          return showToast("Both code and password are required.", "error");
+
+        const params = new URLSearchParams();
+        params.append("code", code);
+        params.append("new_password", newPass);
+
+        try {
+          const response = await fetch("/verify_and_update_password", {
+            method: "POST",
+            body: params,
+          });
+          const result = await response.json();
+          if (result.status === "success") {
+            showToast("Password updated successfully!", "success");
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast(result.message, "error");
+          }
+        } catch (e) {
+          showToast("Could not update password.", "error");
+        }
+      }
+
+      function resetEmailForm() {
+        document.getElementById("emailStep1").classList.remove("hidden");
+        document.getElementById("emailStep2").classList.add("hidden");
+        document.getElementById("sendCodeBtn").disabled = false;
+        document.getElementById("sendCodeBtn").innerText =
+          "Send Verification Codes";
+      }
     </script>
   </body>
 </html>
