@@ -21,6 +21,7 @@ from flask_login import (
     logout_user,
     current_user,
 )
+from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import tasks_collection, users_collection, flashcards_collection
 from bson import ObjectId
@@ -30,6 +31,18 @@ from flashcard_module import generate_flashcards_ai
 app = Flask(__name__, static_folder="static")
 app.secret_key = "super_secret_key_change_this"  # Required for sessions
 
+# SUPABASE SETUP
+SUPABASE_URL = os.getenv("supabase_url")
+SUPABASE_KEY = os.getenv("supabase_service")
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Supabase Connected Successfully!")
+except Exception as e:
+    print(f"Supabase Connection Error: {e}")
+
+BUCKET_NAME = "Avatar"
+
+# Mail Setup
 mail_username = os.getenv("MAIL_USERNAME")
 
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
@@ -312,6 +325,48 @@ def logout():
     return redirect(url_for("login"))
 
 
+# profile pic
+
+# @app.route("/update_profile_pic", methods=["POST"])
+# @login_required
+# def update_profile_pic():
+#     if "file" not in request.files:
+#         return jsonify({"status": "error", "message": "No file part"}), 400
+
+#     file = request.files["file"]
+#     if file.filename == "":
+#         return jsonify({"status": "error", "message": "No selected file"}), 400
+
+#     try:
+#         # 1. Define a unique file path in Supabase
+#         file_ext = file.filename.rsplit(".", 1)[1].lower()
+#         file_path = (
+#             f"profiles/{current_user.id}_{int(datetime.now().timestamp())}.{file_ext}"
+#         )
+
+#         # 2. Upload to Supabase Storage
+#         file_content = file.read()
+#         supabase.storage.from_(BUCKET_NAME).upload(
+#             path=file_path,
+#             file=file_content,
+#             file_options={"content-type": file.content_type},
+#         )
+
+#         # 3. Get the Public URL
+#         public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+
+#         # 4. Save this URL to MongoDB
+#         users_collection.update_one(
+#             {"username": current_user.id}, {"$set": {"profile_pic": public_url}}
+#         )
+
+#         flash("Profile picture updated!")
+#         return redirect(url_for("profile"))
+
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # --- APP ROUTES (Now Protected) ---
 
 
@@ -576,7 +631,8 @@ def subscribe():
 @login_required
 def profile():
     user_data = users_collection.find_one({"username": current_user.id})
-    email = user_data.get("email")
+    email = user_data.get("email", "")
+    profile_pic = user_data.get("profile_pic", "")
     if request.method == "POST":
         action = request.form.get("action")
 
@@ -628,7 +684,60 @@ def profile():
 
         return redirect(url_for("profile"))
 
-    return render_template("profile.html", username=current_user.id, email=email)
+    return render_template(
+        "profile.html", username=current_user.id, email=email, profile_pic=profile_pic
+    )
+
+
+from datetime import datetime
+
+
+@app.route("/update_profile_pic", methods=["POST"])
+@login_required
+def update_profile_pic():
+    if "file" not in request.files:
+        flash("No file selected")
+        return redirect(url_for("profile"))
+
+    file = request.files["file"]
+    if file.filename == "":
+        return redirect(url_for("profile"))
+
+    try:
+        # 1. Create a unique filename
+        file_ext = file.filename.rsplit(".", 1)[1].lower()
+        file_path = f"{current_user.id}_{int(datetime.now().timestamp())}.{file_ext}"
+
+        # 2. Upload to Supabase Bucket
+        file_content = file.read()
+        supabase.storage.from_("Avatar").upload(
+            path=file_path,
+            file=file_content,
+            file_options={"content-type": file.content_type},
+        )
+
+        # 3. FIX: Get the actual URL string
+        # .get_public_url() returns an object; you want the attribute inside it
+        res = supabase.storage.from_("Avatar").get_public_url(file_path)
+
+        # Check if it's the newer SDK (attribute) or older SDK (dictionary)
+        if hasattr(res, "public_url"):
+            public_url = res.public_url
+        else:
+            public_url = res  # Some versions return string directly
+
+        # 4. Save the STRING URL to MongoDB
+        users_collection.update_one(
+            {"username": current_user.id}, {"$set": {"profile_pic": str(public_url)}}
+        )
+
+        flash("Profile picture updated!")
+        return redirect(url_for("profile"))
+
+    except Exception as e:
+        print(f"Error: {e}")
+        flash("Upload failed.")
+        return redirect(url_for("profile"))
 
 
 @app.route("/googlecca03cf2d9f78825.html")

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -98,7 +98,33 @@
         pointer-events: auto;
       }
       .task-title {
-        transition: opacity 0.2s ease, text-decoration 0.2s ease;
+        transition:
+          opacity 0.2s ease,
+          text-decoration 0.2s ease;
+      }
+
+      /* Music Progress Bar Customization */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        background: #334155;
+        height: 4px;
+        border-radius: 2px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        margin-top: -6px;
+        background-color: #2563eb;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
       }
     </style>
   </head>
@@ -116,7 +142,6 @@
           </div>
           <a href="/" class="font-bold text-2xl text-white tracking-wide">
             BlueStudy
-            <!-- <span class="ms-1 text-blue-500 text-sm font-medium">PRO</span> -->
           </a>
         </div>
 
@@ -151,12 +176,6 @@
           >
             <i class="fas fa-clock"></i> Timer
           </a>
-          <!-- <a
-              href="{{ url_for('subscribe') }}"
-              class="flex items-center gap-2 transition {{ 'text-blue-400 font-bold' if request.endpoint == 'subscribe' else 'text-amber-400 hover:text-amber-300' }}"
-            >
-              <i class="fas fa-crown"></i> Upgrade to Pro
-            </a> -->
         </div>
 
         <div class="relative inline-block text-left" id="settingsDropdown">
@@ -258,7 +277,7 @@
           <div
             class="card rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-blue-900/10 flex flex-col items-center relative overflow-hidden"
           >
-            <!-- Settings Panel Overlay (Both gear icons trigger this) -->
+            <!-- Settings Panel Overlay -->
             <div
               id="settingsPanel"
               class="absolute inset-0 bg-slate-900/98 backdrop-blur-xl z-50 p-8 flex flex-col translate-y-full opacity-0 pointer-events-none"
@@ -399,7 +418,6 @@
                 <i id="playIcon" class="fas fa-play text-3xl ml-1"></i>
               </button>
 
-              <!-- Card Settings Button (Linked to same overlay) -->
               <button
                 onclick="toggleTimerCustomization()"
                 title="Settings"
@@ -411,56 +429,152 @@
           </div>
         </div>
 
-        <!-- Right Side: Session Tasks -->
-        <div class="w-full max-w-md">
-          <div class="flex justify-between items-center mb-6 px-2">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-              <i class="fas fa-list-check text-blue-500"></i> Session Tasks
-            </h2>
-            <a
-              href="{{ url_for('index') }}"
-              class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition"
-            >
-              <i class="fas fa-plus text-sm"></i>
-            </a>
-          </div>
-
-          <div class="space-y-4">
-            {% for task in tasks %}
-            <div
-              class="card p-5 rounded-3xl flex items-center gap-4 group hover:border-blue-500/50 transition cursor-pointer"
-            >
+        <!-- Right Side: Tasks & Music -->
+        <div class="w-full max-w-md space-y-6">
+          <!-- Music Player Card -->
+          <div class="card p-6 rounded-[2.5rem] shadow-xl border-blue-500/20">
+            <div class="flex items-center gap-4 mb-4">
               <div
-                class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center group-hover:border-blue-500"
-                onclick="toggleTask('{{ task._id }}', this)"
+                class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500 shadow-inner"
               >
-                {% if task.status == 'Completed' %}
-                <i class="fas fa-check text-blue-500 text-xs"></i>
-                {% endif %}
+                <i class="fas fa-music text-xl animate-pulse"></i>
               </div>
               <div class="flex-1">
+                <h3 class="text-sm font-bold text-white tracking-wide">
+                  Focus Audio
+                </h3>
                 <p
-                  class="font-semibold text-slate-200 task-title {% if task.status == 'Completed' %}line-through opacity-60{% endif %}"
+                  class="text-[11px] text-slate-500 uppercase font-black tracking-widest"
                 >
-                  {{ task.subject }}
-                </p>
-                <p class="text-xs text-slate-500 mt-0.5">
-                  {{ task.description }}
+                  lofi.mp3
                 </p>
               </div>
-              <div class="text-slate-500 text-sm whitespace-nowrap">
-                {{ task.priority }} <i class="fas fa-flag ml-1"></i>
+              <div class="flex gap-2">
+                <button
+                  onclick="restartMusic()"
+                  class="text-slate-400 hover:text-white transition"
+                  title="Restart"
+                >
+                  <i class="fas fa-undo-alt"></i>
+                </button>
+                <button
+                  id="musicToggleBtn"
+                  onclick="toggleMusic()"
+                  class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition shadow-lg"
+                >
+                  <i id="musicIcon" class="fas fa-play ml-0.5"></i>
+                </button>
               </div>
             </div>
-            {% else %}
-            <div class="text-center py-10 opacity-50">
-              <p>No pending tasks for this session.</p>
+
+            <!-- Audio Element -->
+            <audio id="lofiAudio" loop>
+              <source
+                src="https://xlsxocpibcapcpgzovjd.supabase.co/storage/v1/object/public/Music/lofi.mp3"
+                type="audio/mpeg"
+              />
+              <source
+                src="{{ url_for('static', filename='lofi.mp3') }}"
+                type="audio/mpeg"
+              />
+            </audio>
+
+            <!-- Progress Bar -->
+            <!-- <div class="space-y-1 mb-4">
+              <input
+                type="range"
+                id="musicProgress"
+                value="0"
+                step="0.1"
+                class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <div
+                class="flex justify-between text-[10px] text-slate-500 font-mono"
+              >
+                <span id="currentTime">0:00</span>
+                <span id="duration">0:00</span>
+              </div>
+            </div> -->
+
+            <!-- Volume Control -->
+            <div class="flex items-center gap-3 mb-4">
+              <i class="fas fa-volume-low text-slate-500 text-xs"></i>
+              <input
+                type="range"
+                id="volumeControl"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.5"
+                class="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <i class="fas fa-volume-high text-slate-500 text-xs"></i>
             </div>
-            {% endfor %}
+
+            <!-- Credit Text -->
+            <div class="pt-4 border-t border-slate-700/50">
+              <p
+                class="text-[10px] text-slate-500 italic text-center leading-relaxed"
+              >
+                Special thanks to
+                <span class="text-blue-400 font-semibold">Yoon Mo Mo Eaim</span>
+                for providing lofi music for BlueStudy.
+              </p>
+            </div>
           </div>
 
+          <!-- Session Tasks -->
+          <div>
+            <div class="flex justify-between items-center mb-6 px-2">
+              <h2 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-list-check text-blue-500"></i> Session Tasks
+              </h2>
+              <a
+                href="{{ url_for('index') }}"
+                class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition"
+              >
+                <i class="fas fa-plus text-sm"></i>
+              </a>
+            </div>
+
+            <div class="space-y-4">
+              {% for task in tasks %}
+              <div
+                class="card p-5 rounded-3xl flex items-center gap-4 group hover:border-blue-500/50 transition cursor-pointer"
+              >
+                <div
+                  class="w-6 h-6 rounded-full border-2 border-slate-600 flex items-center justify-center group-hover:border-blue-500"
+                  onclick="toggleTask('{{ task._id }}', this)"
+                >
+                  {% if task.status == 'Completed' %}
+                  <i class="fas fa-check text-blue-500 text-xs"></i>
+                  {% endif %}
+                </div>
+                <div class="flex-1">
+                  <p
+                    class="font-semibold text-slate-200 task-title {% if task.status == 'Completed' %}line-through opacity-60{% endif %}"
+                  >
+                    {{ task.subject }}
+                  </p>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    {{ task.description }}
+                  </p>
+                </div>
+                <div class="text-slate-500 text-sm whitespace-nowrap">
+                  {{ task.priority }} <i class="fas fa-flag ml-1"></i>
+                </div>
+              </div>
+              {% else %}
+              <div class="text-center py-10 opacity-50">
+                <p>No pending tasks for this session.</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Stats Footer -->
           <div
-            class="mt-8 p-6 bg-blue-600/10 border border-blue-500/20 rounded-[2rem]"
+            class="p-6 bg-blue-600/10 border border-blue-500/20 rounded-[2rem]"
           >
             <div class="grid grid-cols-2 gap-4">
               <div class="text-center border-r border-slate-800">
@@ -486,6 +600,7 @@
         </div>
       </div>
     </main>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     <script>
@@ -509,6 +624,14 @@
       const timerContainer = document.getElementById("timerContainer");
       const settingsPanel = document.getElementById("settingsPanel");
       const ringCircumference = 2 * Math.PI * 130;
+
+      // Music Player Elements
+      const audio = document.getElementById("lofiAudio");
+      const musicIcon = document.getElementById("musicIcon");
+      // const musicProgress = document.getElementById("musicProgress");
+      const volumeControl = document.getElementById("volumeControl");
+      // const currentTimeLabel = document.getElementById("currentTime");
+      const durationLabel = document.getElementById("duration");
 
       progressRing.style.strokeDasharray = ringCircumference;
 
@@ -536,6 +659,13 @@
         playIcon.classList.remove("ml-1");
         timerContainer.classList.add("timer-running");
 
+        audio
+          .play()
+          .catch((e) =>
+            console.log("Audio play blocked until user interaction."),
+          );
+        musicIcon.classList.replace("fa-play", "fa-pause");
+
         timer = setInterval(() => {
           if (timeLeft > 0) {
             timeLeft--;
@@ -543,8 +673,10 @@
           } else {
             clearInterval(timer);
             isRunning = false;
+            audio.pause();
+            musicIcon.classList.replace("fa-pause", "fa-play");
             new Audio(
-              "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+              "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
             )
               .play()
               .catch(() => {});
@@ -598,20 +730,21 @@
         totalTime = timeLeft;
         updateDisplay();
       }
+
       function toggleTimerCustomization() {
         const isVisible = settingsPanel.classList.contains("translate-y-0");
         if (isVisible) {
           settingsPanel.classList.add(
             "translate-y-full",
             "opacity-0",
-            "pointer-events-none"
+            "pointer-events-none",
           );
           settingsPanel.classList.remove("translate-y-0", "opacity-100");
         } else {
           settingsPanel.classList.remove(
             "translate-y-full",
             "opacity-0",
-            "pointer-events-none"
+            "pointer-events-none",
           );
           settingsPanel.classList.add("translate-y-0", "opacity-100");
         }
@@ -626,10 +759,75 @@
           parseInt(document.getElementById("longInput").value) || 15;
 
         setMode(currentMode);
-        toggleTimerCustomization(); // Close the timer card
+        toggleTimerCustomization();
+      }
+
+      // --- Music Logic ---
+      audio.addEventListener(
+        "error",
+        function (e) {
+          const currentSrc = audio.currentSrc;
+          if (currentSrc.includes("supabase.co")) {
+            console.warn(
+              "primary Supabase audio failed to load switching to local",
+            );
+            audio.load();
+          }
+        },
+        true,
+      );
+
+      function toggleMusic() {
+        if (audio.paused) {
+          // .play() returns a promise, we can catch errors here too
+          audio.play().catch((err) => {
+            console.error("Playback failed. Trying backup...", err);
+            audio.load();
+            audio.play();
+          });
+          musicIcon.classList.replace("fa-play", "fa-pause");
+        } else {
+          audio.pause();
+          musicIcon.classList.replace("fa-pause", "fa-play");
+        }
+      }
+
+      function restartMusic() {
+        // audio.currentTime = 0;
+        if (audio.paused) {
+          audio.play();
+          musicIcon.classList.replace("fa-play", "fa-pause");
+        }
+      }
+
+      // audio.addEventListener("timeupdate", () => {
+      //   const progress = (audio.currentTime / audio.duration) * 100;
+      //   musicProgress.value = isNaN(progress) ? 0 : progress;
+
+      //   // Update Time Labels
+      //   currentTimeLabel.innerText = formatAudioTime(audio.currentTime);
+      //   if (!isNaN(audio.duration)) {
+      //     durationLabel.innerText = formatAudioTime(audio.duration);
+      //   }
+      // });
+
+      // musicProgress.addEventListener("input", () => {
+      //   const time = (musicProgress.value / 100) * audio.duration;
+      //   audio.currentTime = time;
+      // });
+
+      volumeControl.addEventListener("input", () => {
+        audio.volume = volumeControl.value;
+      });
+
+      function formatAudioTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
       }
 
       updateDisplay();
+
       function toggleTask(taskId, el) {
         fetch(`/toggle_task/${taskId}`, {
           method: "POST",
@@ -649,6 +847,21 @@
             }
           });
       }
+
+      // Dropdown toggle logic
+      function toggleSettings() {
+        const menu = document.getElementById("dropdownMenu");
+        menu.classList.toggle("show");
+      }
+
+      window.onclick = function (event) {
+        if (!event.target.closest("#settingsDropdown")) {
+          const menu = document.getElementById("dropdownMenu");
+          if (menu.classList.contains("show")) {
+            menu.classList.remove("show");
+          }
+        }
+      };
     </script>
   </body>
 </html>
